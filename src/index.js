@@ -14,7 +14,8 @@ class Board extends React.Component {
 
   createSquare(i) {
     return (
-      <Square 
+      <Square
+        key={i}
         value={this.props.squares[i]} 
         onClick={() => this.props.onClick(i)}
       />
@@ -28,7 +29,7 @@ class Board extends React.Component {
       for(let j=0; j<3; j++){
         row.push(this.createSquare(i*3+j));
       }
-      board.push(<div className="board-row">{row}</div>);
+      board.push(<div key={i} className="board-row">{row}</div>);
     }
     return (
       <div>
@@ -48,10 +49,12 @@ class Game extends React.Component {
     this.state = {
         history: [{
             squares: Array(9).fill(null),
-            position: null
+            position: null,
+            move: 0
         }],
         stepNumber: 0,
         xIsNext: true,
+        reverseMoves: false
     }
   }
   handleClick(i) {
@@ -65,7 +68,8 @@ class Game extends React.Component {
     this.setState({
       history: history.concat([{
           squares: squares,
-          position: i
+          position: i,
+          move: history.length
       }]),
       stepNumber: history.length,
       xIsNext: !this.state.xIsNext,
@@ -77,21 +81,27 @@ class Game extends React.Component {
         xIsNext: (step % 2) === 0,
     });
   }
+  toggleMovesOrder() {
+    this.setState({
+      reverseMoves: !this.state.reverseMoves
+    });
+  }
   render() {
     const history = this.state.history;
     const current = history[this.state.stepNumber];
     const winner = calculateWinner(current.squares);
-    const moves = history.map((step, move) => {
-      const desc = move ? 
-        `Go to move #${move} (${getRow(step.position)}, ${getCol(step.position)})`:
-        'Go to game start';
-      const style = {'fontWeight': this.state.stepNumber === move ? 'bold' : 'normal'};
-      return (
-        <li key={move} style={style}>
-            <button onClick={() => this.jumpTo(move)} style={style}>{desc}</button>
-        </li>
-      );
-        
+    
+    const moves = (this.state.reverseMoves ? [...history].reverse() : [...history])
+      .map((step, index) => {
+        const desc = step.move ? 
+            `Go to move #${step.move} (${getRow(step.position)}, ${getCol(step.position)})`:
+            'Go to game start';
+        const style = {'fontWeight': this.state.stepNumber === step.move ? 'bold' : 'normal'};
+        return (
+            <li key={index} style={style}>
+                <button onClick={() => this.jumpTo(step.move)} style={style}>{desc}</button>
+            </li>
+        );     
     });
     let status;
     if (winner) {
@@ -109,7 +119,11 @@ class Game extends React.Component {
         </div>
         <div className="game-info">
           <div>{status}</div>
-          <ol>{moves}</ol>
+          <div>
+            <input type="checkbox" onChange={() => this.toggleMovesOrder()}/>
+            <label>Reverse moves order</label>
+          </div>
+          <ul>{moves}</ul>
         </div>
       </div>
     );
